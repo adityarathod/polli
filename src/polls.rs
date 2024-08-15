@@ -3,7 +3,21 @@ use std::collections::HashMap;
 pub struct Poll {
     pub question: String,
     pub options: Vec<String>,
-    pub votes: Vec<u32>,
+    pub votes: u32,
+}
+
+impl Poll {
+    pub fn new(question: String, options: Vec<String>) -> Result<Poll, String> {
+        if options.is_empty() {
+            return Err("At least one option is required".into());
+        }
+
+        Ok(Poll {
+            question,
+            options,
+            votes: 0,
+        })
+    }
 }
 
 type PollID = String;

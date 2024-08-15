@@ -1,23 +1,85 @@
-mod command;
 mod polls;
-mod prompt;
 
-use command::Command;
+use clap::{Parser, Subcommand};
+use polls::{Poll, PollDB};
+
+#[derive(Parser, Debug)]
+#[command(version = "dev", about = "polli means poll interface. an interface to conduct polls.", long_about = None)]
+struct CliArgs {
+    #[command(subcommand)]
+    command: CliSubcommand,
+}
+
+#[derive(Subcommand, Debug)]
+enum CliSubcommand {
+    Create {
+        #[arg(short, long,
+            value_parser = clap::builder::NonEmptyStringValueParser::new(),
+            help = "The question to ask in the poll"
+        )]
+        question: String,
+        #[arg(short, long,
+            num_args = 1..,
+            required = true,
+            help = "The options to provide for the poll; at least one option is required"
+        )]
+        options: Vec<String>,
+    },
+    Describe {
+        #[arg(short, long,
+            value_parser = clap::builder::NonEmptyStringValueParser::new(),
+            help = "The ID of the poll to describe"
+        )]
+        id: String,
+    },
+    Update {
+        #[arg(short, long,
+            value_parser = clap::builder::NonEmptyStringValueParser::new(),
+            help = "The question to ask in the poll"
+        )]
+        question: Option<String>,
+        #[arg(short, long,
+            num_args = 1..,
+            help = "The options to provide for the poll; at least one option is required"
+        )]
+        options: Option<Vec<String>>,
+    },
+    Delete {
+        #[arg(short, long,
+            value_parser = clap::builder::NonEmptyStringValueParser::new(),
+            help = "The ID of the poll to delete"
+        )]
+        id: String,
+    },
+    Vote {
+        #[arg(short, long,
+            value_parser = clap::builder::NonEmptyStringValueParser::new(),
+            help = "The ID of the poll to vote on"
+        )]
+        id: String,
+        #[arg(short, long, 
+            value_parser = clap::builder::NonEmptyStringValueParser::new(), 
+            help = "The option to vote for"
+        )]
+        option: String,
+    },
+}
 
 fn main() {
+    let args = CliArgs::parse();
+    let mut db = PollDB::new();
     println!("Welcome to Polli");
-    let mut db = polls::PollDB::new();
-    // infinite loop
-    loop {
-        let input = prompt::get_with_prompt("polli> ");
-        // parse command
-        let command = match Command::from_str(&input) {
-            Some(cmd) => cmd,
-            None => {
-                println!("Invalid command");
-                continue;
+    match args.command {
+        CliSubcommand::Create { question, options } => {
+            let id = format!("{:x}", rand::random::<u32>());
+            match Poll::new(question, options) {
+                Ok(poll) => {
+                    db.add_poll(id, poll);
+                    db.list_polls();
+                }
+                Err(e) => println!("Failed to create poll: {}", e),
             }
-        };
-        command.execute(&mut db);
+        }
+        _ => todo!("Need to add this"),
     }
 }
