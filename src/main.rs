@@ -28,9 +28,9 @@ enum CliSubcommand {
     Describe {
         #[arg(short, long,
             value_parser = clap::builder::NonEmptyStringValueParser::new(),
-            help = "The ID of the poll to describe (optional)"
+            help = "The ID of the poll to describe"
         )]
-        id: Option<String>,
+        id: String,
     },
     Update {
         #[arg(short, long,
@@ -69,14 +69,17 @@ fn main() {
     let args = CliArgs::parse();
     let mut db = PollDB::new();
     println!("Welcome to Polli");
-    // let mut db = polls::PollDB::new();
     match args.command {
         CliSubcommand::Create { question, options } => {
             let id = format!("{:x}", rand::random::<u32>());
-            let poll = Poll::new(question, options);
-            db.add_poll(id, poll);
-            db.list_polls();
+            match Poll::new(question, options) {
+                Ok(poll) => {
+                    db.add_poll(id, poll);
+                    db.list_polls();
+                }
+                Err(e) => println!("Failed to create poll: {}", e),
+            }
         }
-        _ => println!("Command not implemented"),
+        _ => todo!("Need to add this"),
     }
 }

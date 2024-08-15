@@ -7,12 +7,16 @@ pub struct Poll {
 }
 
 impl Poll {
-    pub fn new(question: String, options: Vec<String>) -> Poll {
-        Poll {
+    pub fn new(question: String, options: Vec<String>) -> Result<Poll, String> {
+        if options.is_empty() {
+            return Err("At least one option is required".into());
+        }
+
+        Ok(Poll {
             question,
             options,
             votes: 0,
-        }
+        })
     }
 }
 
