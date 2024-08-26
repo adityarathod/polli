@@ -1,85 +1,26 @@
-mod polls;
+mod models;
+mod schema;
+mod cli;
 
-use clap::{Parser, Subcommand};
-use polls::{Poll, PollDB};
+use std::borrow::Borrow;
 
-#[derive(Parser, Debug)]
-#[command(version = "dev", about = "polli means poll interface. an interface to conduct polls.", long_about = None)]
-struct CliArgs {
-    #[command(subcommand)]
-    command: CliSubcommand,
-}
+use clap::Parser;
+use diesel::prelude::*;
+use diesel::{Connection, ExpressionMethods, SqliteConnection};
 
-#[derive(Subcommand, Debug)]
-enum CliSubcommand {
-    Create {
-        #[arg(short, long,
-            value_parser = clap::builder::NonEmptyStringValueParser::new(),
-            help = "The question to ask in the poll"
-        )]
-        question: String,
-        #[arg(short, long,
-            num_args = 1..,
-            required = true,
-            help = "The options to provide for the poll; at least one option is required"
-        )]
-        options: Vec<String>,
-    },
-    Describe {
-        #[arg(short, long,
-            value_parser = clap::builder::NonEmptyStringValueParser::new(),
-            help = "The ID of the poll to describe"
-        )]
-        id: String,
-    },
-    Update {
-        #[arg(short, long,
-            value_parser = clap::builder::NonEmptyStringValueParser::new(),
-            help = "The question to ask in the poll"
-        )]
-        question: Option<String>,
-        #[arg(short, long,
-            num_args = 1..,
-            help = "The options to provide for the poll; at least one option is required"
-        )]
-        options: Option<Vec<String>>,
-    },
-    Delete {
-        #[arg(short, long,
-            value_parser = clap::builder::NonEmptyStringValueParser::new(),
-            help = "The ID of the poll to delete"
-        )]
-        id: String,
-    },
-    Vote {
-        #[arg(short, long,
-            value_parser = clap::builder::NonEmptyStringValueParser::new(),
-            help = "The ID of the poll to vote on"
-        )]
-        id: String,
-        #[arg(short, long, 
-            value_parser = clap::builder::NonEmptyStringValueParser::new(), 
-            help = "The option to vote for"
-        )]
-        option: String,
-    },
-}
+use self::models::*;
+use self::schema::polls::dsl::*;
 
 fn main() {
-    let args = CliArgs::parse();
-    let mut db = PollDB::new();
+    let args = cli::Args::parse();
+    let mut conn = SqliteConnection::establish(args.db_file.borrow())
+        .unwrap_or_else(|_| panic!("Error connecting to {}", args.db_file));
     println!("Welcome to Polli");
-    match args.command {
-        CliSubcommand::Create { question, options } => {
-            let id = format!("{:x}", rand::random::<u32>());
-            match Poll::new(question, options) {
-                Ok(poll) => {
-                    db.add_poll(id, poll);
-                    db.list_polls();
-                }
-                Err(e) => println!("Failed to create poll: {}", e),
-            }
-        }
-        _ => todo!("Need to add this"),
-    }
+    let results = polls
+        .filter(question.ne(""))
+        .select(Poll::as_select())
+        .load(&mut conn)
+        .expect("Error loading polls");
+    println!("Results: {:?}", results);
+    cli::run(&args);
 }
