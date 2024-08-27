@@ -2,7 +2,7 @@
 
 diesel::table! {
     choices (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         poll_id -> Integer,
         choice_text -> Text,
     }
@@ -10,27 +10,27 @@ diesel::table! {
 
 diesel::table! {
     polls (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         external_id -> Text,
         question -> Text,
-        created_at -> Nullable<Timestamp>,
+        created_at -> Timestamp,
     }
 }
 
 diesel::table! {
     users (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         username -> Text,
     }
 }
 
 diesel::table! {
     votes (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         user_id -> Integer,
         poll_id -> Integer,
         choice_id -> Integer,
-        voted_at -> Nullable<Timestamp>,
+        voted_at -> Timestamp,
     }
 }
 
